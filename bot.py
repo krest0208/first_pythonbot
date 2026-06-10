@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import os
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -10,7 +11,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
 # ========== ТОКЕН ==========
-TOKEN = "8517689872:AAGPNVt-yqYk4b2crIUYEZx1kkwOI91BSdQ"
+TOKEN = os.getenv("BOT_TOKEN")
 # ===========================
 
 MASTER_ID = 1794103751
