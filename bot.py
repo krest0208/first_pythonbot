@@ -40,7 +40,6 @@ PRICES = {
 
 MASTERS = ["Анна", "Елена"]
 
-# Хранилище
 appointments = []
 next_id = 1
 greeted_users = set()
@@ -52,7 +51,7 @@ class Booking(StatesGroup):
     date = State()
     time = State()
 
-# ========== КЛАВИАТУРЫ ==========
+# ========== КЛАВИАТУРЫ (ИСПРАВЛЕННЫЕ) ==========
 def get_main_menu_kb():
     kb = ReplyKeyboardMarkup(
         keyboard=[
@@ -89,13 +88,13 @@ def get_date_kb():
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
 def get_time_kb():
-    kb = []
+    buttons = []
     for hour in range(9, 21):
-        kb.append([InlineKeyboardButton(text=f"{hour:02d}:00", callback_data=f"time_{hour:02d}:00")])
+        buttons.append(InlineKeyboardButton(text=f"{hour:02d}:00", callback_data=f"time_{hour:02d}:00"))
         if hour < 20:
-            kb.append([InlineKeyboardButton(text=f"{hour:02d}:30", callback_data=f"time_{hour:02d}:30")])
+            buttons.append(InlineKeyboardButton(text=f"{hour:02d}:30", callback_data=f"time_{hour:02d}:30"))
     
-    rows = [kb[i:i+3] for i in range(0, len(kb), 3)]
+    rows = [buttons[i:i+3] for i in range(0, len(buttons), 3)]
     markup = InlineKeyboardMarkup(inline_keyboard=rows)
     markup.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="back_date")])
     markup.inline_keyboard.append([InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
@@ -173,7 +172,7 @@ async def reminder_checker():
             pass
         await asyncio.sleep(60)
 
-# ========== ОБРАБОТЧИКИ КОМАНД ==========
+# ========== ОБРАБОТЧИКИ ==========
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
@@ -187,8 +186,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
             "<b>Что я умею:</b>\n"
             "• Запись на стрижку, маникюр и другие услуги\n"
             "• Выбор мастера (Анна или Елена)\n"
-            "• Умный ввод даты (завтра, 15.06)\n"
-            "• Умный ввод времени (14:00 или 14)\n"
+            "• Выбор даты (сегодня/завтра)\n"
+            "• Выбор времени (кнопками)\n"
             "• Напоминание о записи за час\n\n"
             "👇 <b>Нажмите кнопку «📅 Новая запись»</b>",
             parse_mode="HTML",
@@ -221,7 +220,7 @@ async def cancel_from_menu(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Действие отменено. /start", reply_markup=get_main_menu_kb())
 
-# ========== ОБРАБОТЧИКИ КНОПОК ==========
+# ========== КОЛБЭКИ ==========
 @dp.callback_query(Booking.service)
 async def cb_service(call: types.CallbackQuery, state: FSMContext):
     if call.data == "cancel":
@@ -374,7 +373,7 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
         await state.clear()
         await call.answer()
 
-# ========== КОМАНДЫ ДЛЯ КЛИЕНТА ==========
+# ========== КОМАНДЫ КЛИЕНТА ==========
 @dp.message(Command("my"))
 async def my_appointments(message: types.Message):
     user_apps = [a for a in appointments if a["user_id"] == message.from_user.id]
@@ -444,7 +443,7 @@ async def cancel_booking(message: types.Message):
     except:
         pass
 
-# ========== КОМАНДЫ ДЛЯ МАСТЕРА ==========
+# ========== КОМАНДЫ МАСТЕРА ==========
 @dp.message(Command("admin"))
 async def admin_view(message: types.Message):
     if message.from_user.id != MASTER_ID:
