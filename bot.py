@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import json
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -51,7 +52,7 @@ class Booking(StatesGroup):
     date = State()
     time = State()
 
-# ========== КЛАВИАТУРЫ (ИСПРАВЛЕННЫЕ) ==========
+# ========== КЛАВИАТУРЫ ==========
 def get_main_menu_kb():
     kb = ReplyKeyboardMarkup(
         keyboard=[
@@ -172,7 +173,93 @@ async def reminder_checker():
             pass
         await asyncio.sleep(60)
 
-# ========== ОБРАБОТЧИКИ ==========
+# ========== ОБРАБОТЧИК ЗАПИСЕЙ С САЙТА ==========
+@dp.message(lambda message: message.text and message.text.startswith("BOOKING_FROM_SITE:"))
+async def handle_site_booking(message: types.Message):
+    try:
+        data_str = message.text.replace("BOOKING_FROM_SITE:", "")
+        data = json.loads(data_str)
+        
+        client_name = data.get("client_name")
+        client_telegram = data.get("client_telegram")
+        service = data.get("service")
+        master = data.get("master")
+        date = data.get("date")
+        time = data.get("time")
+        
+        service_names = {
+            "man_haircut": "Мужская стрижка",
+            "woman_haircut": "Женская стрижка",
+            "coloring": "Окрашивание",
+            "styling": "Укладка",
+            "manicure": "Маникюр"
+        }
+        prices = {
+            "man_haircut": 800,
+            "woman_haircut": 1500,
+            "coloring": 3000,
+            "styling": 1000,
+            "manicure": 1200
+        }
+        
+        service_name = service_names.get(service, service)
+        price = prices.get(service, 0)
+        
+        # Сохраняем запись в список
+        global next_id
+        booking_id = next_id
+        next_id += 1
+        
+        appointments.append({
+            "id": booking_id,
+            "user_id": MASTER_ID,
+            "user_name": client_name,
+            "service": service,
+            "master": master,
+            "date": date,
+            "date_display": date,
+            "time": time,
+            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
+            "from_site": True
+        })
+        
+        # Уведомление мастеру
+        await bot.send_message(
+            MASTER_ID,
+            f"🔔 <b>НОВАЯ ЗАПИСЬ С САЙТА!</b>\n\n"
+            f"👤 Клиент: {client_name}\n"
+            f"📱 Telegram: {client_telegram}\n"
+            f"💇 Услуга: {service_name} — {price}₽\n"
+            f"👤 Мастер: {master}\n"
+            f"📅 Дата: {date}\n"
+            f"⏰ Время: {time}",
+            parse_mode="HTML"
+        )
+        
+        # Уведомление клиенту (если указан Telegram)
+        if client_telegram and client_telegram != "не указан":
+            try:
+                clean_telegram = client_telegram.replace("@", "")
+                await bot.send_message(
+                    clean_telegram,
+                    f"✅ <b>Вы записаны в салон «Анна Стилист»!</b>\n\n"
+                    f"💇 Услуга: {service_name}\n"
+                    f"👤 Мастер: {master}\n"
+                    f"📅 Дата: {date}\n"
+                    f"⏰ Время: {time}\n\n"
+                    f"📍 г. Шахты, ул. Советская, 15\n\n"
+                    f"Ждём вас! 🔔",
+                    parse_mode="HTML"
+                )
+            except:
+                pass
+        
+        print(f"[✓] Запись с сайта: {client_name} -> {service_name} {date} {time}")
+        
+    except Exception as e:
+        print(f"[×] Ошибка обработки записи с сайта: {e}")
+
+# ========== ОБРАБОТЧИКИ КОМАНД ==========
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
@@ -220,7 +307,7 @@ async def cancel_from_menu(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Действие отменено. /start", reply_markup=get_main_menu_kb())
 
-# ========== КОЛБЭКИ ==========
+# ========== ОБРАБОТЧИКИ КНОПОК ==========
 @dp.callback_query(Booking.service)
 async def cb_service(call: types.CallbackQuery, state: FSMContext):
     if call.data == "cancel":
@@ -336,7 +423,8 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
             "date": data["date"],
             "date_display": data["date_display"],
             "time": time_str,
-            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M")
+            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
+            "from_site": False
         })
         
         service_name = SERVICES[data["service"]]
@@ -355,10 +443,11 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
         
         await call.message.answer("🏠 Главное меню:", reply_markup=get_main_menu_kb())
         
+        # Уведомление мастеру (для записей из бота)
         try:
             await bot.send_message(
                 MASTER_ID,
-                f"🔔 <b>НОВАЯ ЗАПИСЬ!</b>\n\n"
+                f"🔔 <b>НОВАЯ ЗАПИСЬ ИЗ БОТА!</b>\n\n"
                 f"👤 {call.from_user.full_name}\n"
                 f"💇 {service_name}\n"
                 f"💰 {price} ₽\n"
@@ -373,7 +462,7 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
         await state.clear()
         await call.answer()
 
-# ========== КОМАНДЫ КЛИЕНТА ==========
+# ========== КОМАНДЫ ДЛЯ КЛИЕНТА ==========
 @dp.message(Command("my"))
 async def my_appointments(message: types.Message):
     user_apps = [a for a in appointments if a["user_id"] == message.from_user.id]
@@ -443,7 +532,7 @@ async def cancel_booking(message: types.Message):
     except:
         pass
 
-# ========== КОМАНДЫ МАСТЕРА ==========
+# ========== КОМАНДЫ ДЛЯ МАСТЕРА ==========
 @dp.message(Command("admin"))
 async def admin_view(message: types.Message):
     if message.from_user.id != MASTER_ID:
@@ -456,7 +545,8 @@ async def admin_view(message: types.Message):
     
     text = "📊 <b>Все записи</b>\n\n"
     for a in appointments:
-        text += f"<b>#{a['id']}</b>\n"
+        source = "🌐 Сайт" if a.get("from_site") else "🤖 Бот"
+        text += f"<b>#{a['id']}</b> {source}\n"
         text += f"👤 {a['user_name']}\n"
         text += f"💇 {SERVICES[a['service']]} — {PRICES[a['service']]}₽\n"
         text += f"👤 {a['master']}\n"
@@ -480,7 +570,7 @@ async def main():
     print("✅ БОТ ЗАПУЩЕН!")
     print("🔒 Проверка занятых слотов включена")
     print("🔔 Напоминания о записях включены (за час)")
-    print("🔙 Кнопка «Назад» добавлена на всех этапах")
+    print("🌐 Поддержка записей с сайта включена")
     
     asyncio.create_task(reminder_checker())
     await dp.start_polling(bot)
