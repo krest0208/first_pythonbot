@@ -3,603 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Анна Стилист | Салон красоты в Шахтах</title>
-    <!-- Font Awesome 6 (бесплатные иконки) -->
+    <title>Анна Стилист | Салон красоты</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #e0e0e0;
-            line-height: 1.5;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-
         .container {
-            max-width: 1200px;
+            max-width: 550px;
             margin: 0 auto;
-            padding: 0 20px;
+            background: white;
+            border-radius: 32px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
-
-        /* Шапка */
-        .header {
-            padding: 24px 0;
-            border-bottom: 1px solid #1a1a1a;
-        }
-
-        .header-inner {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #ffffff;
-            text-decoration: none;
-        }
-
-        .logo span {
-            color: #d4af37;
-        }
-
-        /* Секции */
-        .section {
-            padding: 80px 0;
-            border-bottom: 1px solid #1a1a1a;
-        }
-
-        .section-title {
-            font-size: 36px;
-            font-weight: 600;
-            margin-bottom: 48px;
-            text-align: center;
-            letter-spacing: -0.5px;
-            color: #ffffff;
-        }
-
-        .section-title span {
-            color: #d4af37;
-        }
-
-        /* Герой */
-        .hero {
-            padding: 120px 0;
-            text-align: center;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-        }
-
-        .hero-title {
-            font-size: 56px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -1px;
-            color: #ffffff;
-        }
-
-        .hero-title span {
-            color: #d4af37;
-        }
-
-        .hero-subtitle {
-            font-size: 18px;
-            color: #888;
-            margin-bottom: 32px;
-        }
-
-        /* Услуги */
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-        }
-
-        .service-card {
-            background: #111;
-            border-radius: 16px;
-            padding: 32px 24px;
-            text-align: center;
-            transition: transform 0.2s, border-color 0.2s;
-            border: 1px solid #222;
-        }
-
-        .service-card:hover {
-            transform: translateY(-4px);
-            border-color: #d4af37;
-        }
-
-        .service-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #d4af37;
-        }
-
-        .service-name {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #ffffff;
-        }
-
-        .service-price {
-            font-size: 24px;
-            font-weight: 700;
-            color: #d4af37;
-        }
-
-        /* Форма */
-        .form-container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #111;
-            border-radius: 24px;
-            padding: 40px;
-            border: 1px solid #222;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #ccc;
-        }
-
-        input, select {
+        .header { text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
+        .avatar { font-size: 56px; margin-bottom: 8px; }
+        .name { font-size: 26px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 500; margin-bottom: 8px; color: #2d3748; }
+        select, input {
             width: 100%;
             padding: 14px 16px;
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
             font-size: 16px;
-            color: #fff;
             outline: none;
-            transition: all 0.2s;
+            background: white;
         }
-
-        input:focus, select:focus {
-            border-color: #d4af37;
-        }
-
+        select:focus, input:focus { border-color: #667eea; }
         .time-slots {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-top: 10px;
         }
-
         .time-btn {
-            background: #1a1a1a;
-            border: 1px solid #333;
+            background: #f8f9ff;
+            border: 1px solid #e2e8f0;
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 14px;
         }
-
-        .time-btn:hover {
-            background: #d4af37;
-            color: #0a0a0a;
-            border-color: #d4af37;
-        }
-
-        .time-btn.selected {
-            background: #d4af37;
-            color: #0a0a0a;
-            border-color: #d4af37;
-        }
-
-        .time-btn.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
+        .time-btn:hover { background: #667eea; color: white; }
+        .time-btn.selected { background: #667eea; color: white; border-color: #667eea; }
+        .time-btn.disabled { background: #f1f3f5; color: #adb5bd; cursor: not-allowed; text-decoration: line-through; }
         .btn-submit {
             width: 100%;
             padding: 16px;
-            background: #d4af37;
-            color: #0a0a0a;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
             border: none;
             border-radius: 40px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
             margin-top: 16px;
+            transition: all 0.2s;
         }
-
-        .btn-submit:hover {
-            background: #c4a030;
-            transform: translateY(-2px);
-        }
-
-        /* Контакты */
-        .contacts-grid {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
-            text-align: center;
-        }
-
-        .contact-item {
-            text-align: center;
-        }
-
-        .contact-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-            color: #d4af37;
-        }
-
-        .contact-text {
-            color: #ccc;
-        }
-
-        .contact-link {
-            color: #d4af37;
-            text-decoration: none;
-        }
-
-        /* Футер */
-        .footer {
-            text-align: center;
-            padding: 32px 0;
-            color: #555;
-            font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 36px;
-            }
-            .section-title {
-                font-size: 28px;
-            }
-            .section {
-                padding: 48px 0;
-            }
-            .hero {
-                padding: 60px 0;
-            }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); }
+        .info-text { font-size: 12px; color: #888; text-align: center; margin-top: 20px; }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            z-index: 9999;
+            transition: opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="container">
-            <div class="header-inner">
-                <a href="#" class="logo">ANNA<span>STYLE</span></a>
+    <div class="container">
+        <div class="header">
+            <div class="avatar">✂️</div>
+            <div class="name">АННА СТИЛИСТ</div>
+            <div style="font-size: 14px; color: #888;">салон красоты в Шахтах</div>
+        </div>
+
+        <form id="bookingForm">
+            <div class="form-group">
+                <label>📋 Услуга</label>
+                <select id="service" required>
+                    <option value="man_haircut">💇‍♂️ Мужская стрижка — 800₽</option>
+                    <option value="woman_haircut">💇‍♀️ Женская стрижка — 1500₽</option>
+                    <option value="coloring">🎨 Окрашивание — 3000₽</option>
+                    <option value="styling">✨ Укладка — 1000₽</option>
+                    <option value="manicure">💅 Маникюр — 1200₽</option>
+                </select>
             </div>
-        </div>
-    </div>
 
-    <div class="hero">
-        <div class="container">
-            <h1 class="hero-title">Анна <span>Стилист</span></h1>
-            <p class="hero-subtitle">Салон красоты в Шахтах</p>
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="container">
-            <h2 class="section-title">Наши <span>услуги</span></h2>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-cut"></i> <i class="fas fa-mars"></i></div>
-                    <div class="service-name">Мужская стрижка</div>
-                    <div class="service-price">800 ₽</div>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-cut"></i> <i class="fas fa-venus"></i></div>
-                    <div class="service-name">Женская стрижка</div>
-                    <div class="service-price">1 500 ₽</div>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-palette"></i></div>
-                    <div class="service-name">Окрашивание</div>
-                    <div class="service-price">3 000 ₽</div>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-wind"></i></div>
-                    <div class="service-name">Укладка</div>
-                    <div class="service-price">1 000 ₽</div>
-                </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-hand-sparkles"></i></div>
-                    <div class="service-name">Маникюр</div>
-                    <div class="service-price">1 200 ₽</div>
-                </div>
+            <div class="form-group">
+                <label>👤 Мастер</label>
+                <select id="master" required>
+                    <option value="Анна">Анна</option>
+                    <option value="Елена">Елена</option>
+                </select>
             </div>
-        </div>
-    </div>
 
-    <div class="section">
-        <div class="container">
-            <h2 class="section-title">Записаться <span>онлайн</span></h2>
-            <div class="form-container">
-                <form id="bookingForm">
-                    <div class="form-group">
-                        <label><i class="fas fa-cut"></i> Услуга</label>
-                        <select id="service" required>
-                            <option value="man_haircut">Мужская стрижка — 800₽</option>
-                            <option value="woman_haircut">Женская стрижка — 1500₽</option>
-                            <option value="coloring">Окрашивание — 3000₽</option>
-                            <option value="styling">Укладка — 1000₽</option>
-                            <option value="manicure">Маникюр — 1200₽</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fas fa-user"></i> Мастер</label>
-                        <select id="master" required>
-                            <option value="Анна">Анна</option>
-                            <option value="Елена">Елена</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fas fa-calendar"></i> Дата</label>
-                        <input type="date" id="date" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fas fa-clock"></i> Время</label>
-                        <div id="timeSlots" class="time-slots"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fas fa-user"></i> Ваше имя</label>
-                        <input type="text" id="clientName" placeholder="Как к вам обращаться?" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fab fa-telegram"></i> Telegram</label>
-                        <input type="text" id="clientTelegram" placeholder="@username или номер телефона" required>
-                    </div>
-
-                    <button type="submit" class="btn-submit"><i class="fas fa-calendar-check"></i> Записаться</button>
-                </form>
+            <div class="form-group">
+                <label>📅 Дата</label>
+                <input type="date" id="date" required>
             </div>
-        </div>
-    </div>
 
-    <div class="section">
-        <div class="container">
-            <h2 class="section-title"><span>Контакты</span></h2>
-            <div class="contacts-grid">
-                <div class="contact-item">
-                    <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
-                    <div class="contact-text">г. Шахты, ул. Советская, 15</div>
-                </div>
-                <div class="contact-item">
-                    <div class="contact-icon"><i class="fab fa-telegram"></i></div>
-                    <div class="contact-text">
-                        <a href="https://t.me/anna_style_bot" class="contact-link">@anna_style_bot</a>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label>⏰ Время</label>
+                <div id="timeSlots" class="time-slots"></div>
             </div>
+
+            <div class="form-group">
+                <label>👤 Ваше имя</label>
+                <input type="text" id="clientName" placeholder="Как к вам обращаться?" required>
+            </div>
+
+            <div class="form-group">
+                <label>📱 Telegram (для уведомлений)</label>
+                <input type="text" id="clientTelegram" placeholder="@username" required>
+            </div>
+
+            <button type="submit" class="btn-submit">✂️ Записаться</button>
+        </form>
+
+        <div class="info-text">
+            ✂️ После записи вам придёт уведомление в Telegram<br>
+            📍 г. Шахты, ул. Советская, 15
         </div>
     </div>
 
-    <div class="footer">
-        <div class="container">
-            © 2025 Анна Стилист | Запись через телеграм-бота
-        </div>
-    </div>
+    <div id="notification" class="notification"></div>
 
-<script>
-    // ========== НАСТРОЙКИ ==========
-    const BOT_TOKEN = "СЮДА_ТОКЕН_БОТА";  // Вставь свой токен
-    const BOT_USERNAME = "anna_style_bot";  // Username твоего бота (без @)
-    const SERVICE_DURATION = 30;
-    // ================================
+    <script>
+        // ВСТАВЬ СВОЙ ТОКЕН БОТА (тот же, что в bot.py)
+        const BOT_TOKEN = "8517689872:AAGfe2bFZE932QdzRQfDJu2K_-VYC8phIuY";
+        
+        let occupiedSlots = {};
+        let isSubmitting = false;
 
-    let occupiedSlots = {};
-    let isSubmitting = false;
-
-    function generateTimeSlots() {
-        const slots = [];
-        for (let hour = 9; hour <= 20; hour++) {
-            if (hour < 20) {
-                slots.push(`${hour.toString().padStart(2, '0')}:00`);
-                slots.push(`${hour.toString().padStart(2, '0')}:30`);
-            } else {
-                slots.push(`20:00`);
+        function generateTimeSlots() {
+            const slots = [];
+            for (let hour = 9; hour <= 20; hour++) {
+                if (hour < 20) {
+                    slots.push(`${hour.toString().padStart(2, '0')}:00`);
+                    slots.push(`${hour.toString().padStart(2, '0')}:30`);
+                } else {
+                    slots.push(`20:00`);
+                }
             }
+            return slots;
         }
-        return slots;
-    }
 
-    function isSlotOccupied(date, master, time) {
-        return occupiedSlots[`${date}_${master}_${time}`] === true;
-    }
-
-    function renderTimeSlots(date, master) {
-        const container = document.getElementById('timeSlots');
-        const slots = generateTimeSlots();
-        container.innerHTML = '';
-        
-        slots.forEach(time => {
-            const btn = document.createElement('div');
-            btn.className = 'time-btn';
-            btn.textContent = time;
-            if (isSlotOccupied(date, master, time)) {
-                btn.classList.add('disabled');
-                btn.style.opacity = '0.4';
-                btn.style.cursor = 'not-allowed';
-            } else {
-                btn.onclick = () => {
-                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    document.getElementById('selectedTime').value = time;
-                };
-            }
-            container.appendChild(btn);
-        });
-        
-        if (!document.getElementById('selectedTime')) {
-            const hidden = document.createElement('input');
-            hidden.type = 'hidden';
-            hidden.id = 'selectedTime';
-            document.getElementById('bookingForm').appendChild(hidden);
-        }
-    }
-
-    function showNotification(message, isError = false) {
-        let notification = document.getElementById('notification');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.id = 'notification';
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                padding: 12px 24px;
-                border-radius: 12px;
-                font-weight: 500;
-                z-index: 9999;
-                transition: opacity 0.3s;
-                opacity: 0;
-                pointer-events: none;
-                background-color: ${isError ? '#dc2626' : '#d4af37'};
-                color: ${isError ? 'white' : '#0a0a0a'};
-            `;
-            document.body.appendChild(notification);
-        }
-        
-        notification.textContent = message;
-        notification.style.backgroundColor = isError ? '#dc2626' : '#d4af37';
-        notification.style.color = isError ? 'white' : '#0a0a0a';
-        notification.style.opacity = '1';
-        
-        setTimeout(() => {
-            notification.style.opacity = '0';
-        }, 3000);
-    }
-
-    async function sendBookingToBot(clientName, clientTelegram, service, master, date, time) {
-        // Формируем специальное сообщение для бота
-        const data = {
-            client_name: clientName,
-            client_telegram: clientTelegram || "не указан",
-            service: service,
-            master: master,
-            date: date,
-            time: time
-        };
-        
-        const messageText = `BOOKING_FROM_SITE:${JSON.stringify(data)}`;
-        
-        // Отправляем сообщение боту через Telegram API
-        try {
-            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: `@${BOT_USERNAME}`,
-                    text: messageText
-                })
+        function renderTimeSlots(date, master) {
+            const container = document.getElementById('timeSlots');
+            const slots = generateTimeSlots();
+            container.innerHTML = '';
+            
+            slots.forEach(time => {
+                const btn = document.createElement('div');
+                btn.className = 'time-btn';
+                btn.textContent = time;
+                if (occupiedSlots[`${date}_${master}_${time}`]) {
+                    btn.classList.add('disabled');
+                } else {
+                    btn.onclick = () => {
+                        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        document.getElementById('selectedTime').value = time;
+                    };
+                }
+                container.appendChild(btn);
             });
-            return response.ok;
-        } catch (error) {
-            console.error('Ошибка:', error);
-            return false;
-        }
-    }
-
-    document.getElementById('bookingForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        if (isSubmitting) {
-            showNotification('⏳ Запись уже оформляется, подождите...', true);
-            return;
-        }
-        
-        const service = document.getElementById('service').value;
-        const master = document.getElementById('master').value;
-        const date = document.getElementById('date').value;
-        const time = document.getElementById('selectedTime').value;
-        const clientName = document.getElementById('clientName').value;
-        const clientTelegram = document.getElementById('clientTelegram').value;
-        
-        if (!time) {
-            showNotification('❌ Пожалуйста, выберите время', true);
-            return;
-        }
-        
-        if (!clientName) {
-            showNotification('❌ Пожалуйста, введите ваше имя', true);
-            return;
-        }
-        
-        if (isSlotOccupied(date, master, time)) {
-            showNotification('❌ Это время уже занято. Выберите другое.', true);
-            return;
-        }
-        
-        isSubmitting = true;
-        const submitBtn = document.querySelector('.btn-submit');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
-        submitBtn.disabled = true;
-        
-        try {
-            const sent = await sendBookingToBot(clientName, clientTelegram, service, master, date, time);
             
-            if (!sent) {
-                throw new Error('Не удалось отправить запись');
+            if (!document.getElementById('selectedTime')) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.id = 'selectedTime';
+                document.getElementById('bookingForm').appendChild(hidden);
+            }
+        }
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.backgroundColor = isError ? '#dc2626' : '#d4af37';
+            notification.style.color = isError ? 'white' : '#0a0a0a';
+            notification.style.opacity = '1';
+            setTimeout(() => { notification.style.opacity = '0'; }, 3000);
+        }
+
+        async function sendBookingToBot(data) {
+            // Отправляем данные прямо в Telegram API (к боту)
+            const messageText = `BOOKING_FROM_SITE:${JSON.stringify(data)}`;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            const payload = {
+                chat_id: "anna_style_bot",  // отправляем самому боту
+                text: messageText
+            };
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.ok) {
+                    return true;
+                } else {
+                    console.error("Telegram API error:", result);
+                    return false;
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+                return false;
+            }
+        }
+
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isSubmitting) return;
+            
+            const service = document.getElementById('service').value;
+            const master = document.getElementById('master').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('selectedTime').value;
+            const clientName = document.getElementById('clientName').value;
+            const clientTelegram = document.getElementById('clientTelegram').value;
+            
+            if (!time) { showNotification('❌ Выберите время', true); return; }
+            if (!clientName) { showNotification('❌ Введите имя', true); return; }
+            if (occupiedSlots[`${date}_${master}_${time}`]) { showNotification('❌ Время занято', true); return; }
+            
+            isSubmitting = true;
+            const btn = document.querySelector('.btn-submit');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            btn.disabled = true;
+            
+            const data = {
+                client_name: clientName,
+                client_telegram: clientTelegram,
+                service: service,
+                master: master,
+                date: date,
+                time: time
+            };
+            
+            const success = await sendBookingToBot(data);
+            
+            if (success) {
+                occupiedSlots[`${date}_${master}_${time}`] = true;
+                showNotification('✅ Запись отправлена!');
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientTelegram').value = '';
+                document.getElementById('selectedTime').value = '';
+                renderTimeSlots(date, master);
+            } else {
+                showNotification('❌ Ошибка отправки. Попробуйте позже.', true);
             }
             
-            occupiedSlots[`${date}_${master}_${time}`] = true;
-            showNotification('✅ Вы успешно записаны! Уведомление отправлено мастеру.');
-            
-            document.getElementById('clientName').value = '';
-            document.getElementById('clientTelegram').value = '';
-            document.getElementById('selectedTime').value = '';
-            renderTimeSlots(date, master);
-            
-        } catch (error) {
-            console.error(error);
-            showNotification('❌ Ошибка отправки. Попробуйте снова.', true);
-        } finally {
             setTimeout(() => {
                 isSubmitting = false;
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }, 2000);
-        }
-    });
-    
-    document.getElementById('date').addEventListener('change', () => {
-        const date = document.getElementById('date').value;
-        const master = document.getElementById('master').value;
-        if (date && master) renderTimeSlots(date, master);
-    });
-    
-    document.getElementById('master').addEventListener('change', () => {
-        const date = document.getElementById('date').value;
-        const master = document.getElementById('master').value;
-        if (date && master) renderTimeSlots(date, master);
-    });
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').min = today;
-    renderTimeSlots('', '');
-</script>
+        });
+        
+        document.getElementById('date').addEventListener('change', () => {
+            const date = document.getElementById('date').value;
+            const master = document.getElementById('master').value;
+            if (date && master) renderTimeSlots(date, master);
+        });
+        document.getElementById('master').addEventListener('change', () => {
+            const date = document.getElementById('date').value;
+            const master = document.getElementById('master').value;
+            if (date && master) renderTimeSlots(date, master);
+        });
+        
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').min = today;
+        renderTimeSlots('', '');
+    </script>
 </body>
 </html>

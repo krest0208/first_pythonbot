@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import json
+import sqlite3
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -22,6 +23,114 @@ storage = MemoryStorage()
 bot = Bot(token=TOKEN)
 dp = Dispatcher(storage=storage)
 
+# ========== БАЗА ДАННЫХ ==========
+def init_db():
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS appointments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            user_name TEXT,
+            service TEXT,
+            master TEXT,
+            date TEXT,
+            date_display TEXT,
+            time TEXT,
+            created_at TEXT,
+            from_site INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'active'
+        )
+    ''')
+    conn.commit()
+    conn.close()
+    print("✅ База данных инициализирована")
+
+def save_booking(user_id, user_name, service, master, date, date_display, time, from_site=0):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO appointments (user_id, user_name, service, master, date, date_display, time, created_at, from_site)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, user_name, service, master, date, date_display, time, datetime.now().strftime("%d.%m.%Y %H:%M"), from_site))
+    conn.commit()
+    booking_id = cursor.lastrowid
+    conn.close()
+    return booking_id
+
+def get_user_bookings(user_id):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id, service, master, date_display, time, created_at
+        FROM appointments
+        WHERE user_id = ? AND status = 'active'
+        ORDER BY date, time
+    ''', (user_id,))
+    result = cursor.fetchall()
+    conn.close()
+    return result
+
+def get_all_bookings():
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id, user_name, service, master, date_display, time, created_at, from_site
+        FROM appointments
+        WHERE status = 'active'
+        ORDER BY id DESC
+    ''')
+    result = cursor.fetchall()
+    conn.close()
+    return result
+
+def cancel_booking_db(booking_id, user_id):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE appointments SET status = 'cancelled'
+        WHERE id = ? AND user_id = ?
+    ''', (booking_id, user_id))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+def is_slot_free(master, date, time):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT COUNT(*) FROM appointments
+        WHERE master = ? AND date = ? AND time = ? AND status = 'active'
+    ''', (master, date, time))
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count == 0
+
+def get_free_slots(master, date):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT time FROM appointments
+        WHERE master = ? AND date = ? AND status = 'active'
+    ''', (master, date))
+    busy = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    
+    all_slots = []
+    for hour in range(9, 21):
+        if hour < 20:
+            all_slots.append(f"{hour:02d}:00")
+            all_slots.append(f"{hour:02d}:30")
+        else:
+            all_slots.append(f"20:00")
+    
+    free = [s for s in all_slots if s not in busy]
+    return free
+
+# Инициализация БД
+init_db()
+
 # ========== УСЛУГИ ==========
 SERVICES = {
     "man_haircut": "💇‍♂️ Мужская стрижка",
@@ -41,8 +150,6 @@ PRICES = {
 
 MASTERS = ["Анна", "Елена"]
 
-appointments = []
-next_id = 1
 greeted_users = set()
 reminders_sent = set()
 
@@ -88,61 +195,22 @@ def get_date_kb():
     ]
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
-def get_time_kb():
-    buttons = []
-    for hour in range(9, 21):
-        buttons.append(InlineKeyboardButton(text=f"{hour:02d}:00", callback_data=f"time_{hour:02d}:00"))
-        if hour < 20:
-            buttons.append(InlineKeyboardButton(text=f"{hour:02d}:30", callback_data=f"time_{hour:02d}:30"))
-    
+def get_time_kb(master, date):
+    free_slots = get_free_slots(master, date)
+    buttons = [InlineKeyboardButton(text=slot, callback_data=f"time_{slot}") for slot in free_slots]
     rows = [buttons[i:i+3] for i in range(0, len(buttons), 3)]
     markup = InlineKeyboardMarkup(inline_keyboard=rows)
     markup.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="back_date")])
     markup.inline_keyboard.append([InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return markup
 
-# ========== ФУНКЦИИ ==========
-def time_to_minutes(time_str: str) -> int:
-    try:
-        h, m = map(int, time_str.split(':'))
-        return h * 60 + m
-    except:
-        return -1
-
-def is_slot_occupied(master: str, date: str, time_str: str) -> bool:
-    t = time_to_minutes(time_str)
-    for app in appointments:
-        if app["master"] == master and app["date"] == date:
-            bt = time_to_minutes(app["time"])
-            if abs(t - bt) < SERVICE_DURATION:
-                return True
-    return False
-
-def get_free_slots_text(master: str, date: str) -> str:
-    busy = []
-    for app in appointments:
-        if app["master"] == master and app["date"] == date:
-            busy.append(time_to_minutes(app["time"]))
-    
-    if not busy:
-        return "✅ Весь день свободен (9:00-20:00)"
-    
-    busy.sort()
-    free = []
-    current = 9 * 60
-    for b in busy:
-        if current + SERVICE_DURATION <= b:
-            free.append((current, b))
-        current = max(current, b + SERVICE_DURATION)
-    if current < 20 * 60:
-        free.append((current, 20 * 60))
-    
+def get_free_slots_text(master, date):
+    free = get_free_slots(master, date)
     if not free:
         return "❌ На сегодня всё занято"
-    
     text = "🟢 Свободные окна:\n"
-    for s, e in free:
-        text += f"   • {s//60:02d}:{s%60:02d} - {e//60:02d}:{e%60:02d}\n"
+    for slot in free:
+        text += f"   • {slot}\n"
     return text
 
 # ========== НАПОМИНАНИЯ ==========
@@ -151,26 +219,35 @@ async def reminder_checker():
         try:
             now = datetime.now()
             current_date = now.strftime("%d.%m.%Y")
-            for app in appointments:
-                key = f"{app['id']}"
+            conn = sqlite3.connect('bookings.db')
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, user_id, service, master, date_display, time
+                FROM appointments
+                WHERE date = ? AND status = 'active'
+            ''', (current_date,))
+            apps = cursor.fetchall()
+            conn.close()
+            
+            for app in apps:
+                key = f"{app[0]}"
                 if key in reminders_sent:
                     continue
-                if app["date"] == current_date:
-                    app_hour = int(app["time"].split(':')[0])
-                    app_min = int(app["time"].split(':')[1])
-                    reminder_hour = app_hour - 1
-                    if now.hour == reminder_hour and now.minute == app_min:
-                        await bot.send_message(
-                            app["user_id"],
-                            f"⏰ <b>НАПОМИНАНИЕ!</b>\n\n"
-                            f"Через час у вас {SERVICES[app['service']]} у {app['master']}.\n"
-                            f"📅 {app['date_display']}\n"
-                            f"⏰ {app['time']}",
-                            parse_mode="HTML"
-                        )
-                        reminders_sent.add(key)
-        except:
-            pass
+                app_hour = int(app[5].split(':')[0])
+                app_min = int(app[5].split(':')[1])
+                reminder_hour = app_hour - 1
+                if now.hour == reminder_hour and now.minute == app_min:
+                    await bot.send_message(
+                        app[1],
+                        f"⏰ <b>НАПОМИНАНИЕ!</b>\n\n"
+                        f"Через час у вас {SERVICES[app[2]]} у {app[3]}.\n"
+                        f"📅 {app[4]}\n"
+                        f"⏰ {app[5]}",
+                        parse_mode="HTML"
+                    )
+                    reminders_sent.add(key)
+        except Exception as e:
+            print(f"Ошибка напоминаний: {e}")
         await asyncio.sleep(60)
 
 # ========== ОБРАБОТЧИК ЗАПИСЕЙ С САЙТА ==========
@@ -205,25 +282,12 @@ async def handle_site_booking(message: types.Message):
         service_name = service_names.get(service, service)
         price = prices.get(service, 0)
         
-        # Сохраняем запись в список
-        global next_id
-        booking_id = next_id
-        next_id += 1
+        if not is_slot_free(master, date, time):
+            await message.answer("❌ Это время уже занято!")
+            return
         
-        appointments.append({
-            "id": booking_id,
-            "user_id": MASTER_ID,
-            "user_name": client_name,
-            "service": service,
-            "master": master,
-            "date": date,
-            "date_display": date,
-            "time": time,
-            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
-            "from_site": True
-        })
+        save_booking(MASTER_ID, client_name, service, master, date, date, time, from_site=1)
         
-        # Уведомление мастеру
         await bot.send_message(
             MASTER_ID,
             f"🔔 <b>НОВАЯ ЗАПИСЬ С САЙТА!</b>\n\n"
@@ -236,7 +300,6 @@ async def handle_site_booking(message: types.Message):
             parse_mode="HTML"
         )
         
-        # Уведомление клиенту (если указан Telegram)
         if client_telegram and client_telegram != "не указан":
             try:
                 clean_telegram = client_telegram.replace("@", "")
@@ -307,7 +370,6 @@ async def cancel_from_menu(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Действие отменено. /start", reply_markup=get_main_menu_kb())
 
-# ========== ОБРАБОТЧИКИ КНОПОК ==========
 @dp.callback_query(Booking.service)
 async def cb_service(call: types.CallbackQuery, state: FSMContext):
     if call.data == "cancel":
@@ -373,12 +435,12 @@ async def cb_date(call: types.CallbackQuery, state: FSMContext):
     await state.update_data(date=date_str, date_display=date_display)
     
     data = await state.get_data()
-    free_slots = get_free_slots_text(data["master"], date_str)
+    free_slots_text = get_free_slots_text(data["master"], date_str)
     
     await call.message.edit_text(
         f"✅ Дата: {date_display}\n\n"
-        f"⏰ Выберите время:\n\n{free_slots}",
-        reply_markup=get_time_kb()
+        f"⏰ Выберите время:\n\n{free_slots_text}",
+        reply_markup=get_time_kb(data["master"], date_str)
     )
     await state.set_state(Booking.time)
     await call.answer()
@@ -401,34 +463,30 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
         time_str = call.data[5:]
         data = await state.get_data()
         
-        if is_slot_occupied(data["master"], data["date"], time_str):
-            free_slots = get_free_slots_text(data["master"], data["date"])
+        if not is_slot_free(data["master"], data["date"], time_str):
+            free_slots_text = get_free_slots_text(data["master"], data["date"])
             await call.message.edit_text(
-                f"❌ {data['master']} уже занята в {time_str}!\n\n{free_slots}\n\nВыберите другое время:",
-                reply_markup=get_time_kb()
+                f"❌ {data['master']} уже занята в {time_str}!\n\n{free_slots_text}\n\nВыберите другое время:",
+                reply_markup=get_time_kb(data["master"], data["date"])
             )
             await call.answer()
             return
         
-        global next_id
-        booking_id = next_id
-        next_id += 1
-        
-        appointments.append({
-            "id": booking_id,
-            "user_id": call.from_user.id,
-            "user_name": call.from_user.full_name,
-            "service": data["service"],
-            "master": data["master"],
-            "date": data["date"],
-            "date_display": data["date_display"],
-            "time": time_str,
-            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
-            "from_site": False
-        })
+        booking_id = save_booking(
+            call.from_user.id,
+            call.from_user.full_name,
+            data["service"],
+            data["master"],
+            data["date"],
+            data["date_display"],
+            time_str,
+            from_site=0
+        )
         
         service_name = SERVICES[data["service"]]
         price = PRICES[data["service"]]
+        time_minutes = int(time_str.split(':')[0]) * 60 + int(time_str.split(':')[1])
+        end_time = f"{(time_minutes + SERVICE_DURATION) // 60:02d}:{(time_minutes + SERVICE_DURATION) % 60:02d}"
         
         await call.message.edit_text(
             f"✅ <b>ЗАПИСЬ ОФОРМЛЕНА!</b>\n\n"
@@ -436,14 +494,15 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
             f"💰 {price} ₽\n"
             f"👤 {data['master']}\n"
             f"📅 {data['date_display']}\n"
-            f"⏰ {time_str}\n\n"
-            f"🔔 Я напомню о записи за час.",
+            f"⏰ {time_str} — {end_time}\n\n"
+            f"🔔 Я напомню о записи за час.\n\n"
+            f"Номер записи: #{booking_id}",
             parse_mode="HTML"
         )
         
         await call.message.answer("🏠 Главное меню:", reply_markup=get_main_menu_kb())
         
-        # Уведомление мастеру (для записей из бота)
+        # Уведомление мастеру
         try:
             await bot.send_message(
                 MASTER_ID,
@@ -453,7 +512,7 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
                 f"💰 {price} ₽\n"
                 f"👤 {data['master']}\n"
                 f"📅 {data['date_display']}\n"
-                f"⏰ {time_str}",
+                f"⏰ {time_str} — {end_time}",
                 parse_mode="HTML"
             )
         except:
@@ -465,21 +524,23 @@ async def cb_time(call: types.CallbackQuery, state: FSMContext):
 # ========== КОМАНДЫ ДЛЯ КЛИЕНТА ==========
 @dp.message(Command("my"))
 async def my_appointments(message: types.Message):
-    user_apps = [a for a in appointments if a["user_id"] == message.from_user.id]
-    if not user_apps:
+    bookings = get_user_bookings(message.from_user.id)
+    if not bookings:
         await message.answer("📭 Нет записей. /start", reply_markup=get_main_menu_kb())
         return
     
     text = "📋 <b>Ваши записи</b>\n\n"
-    for a in user_apps:
-        text += f"<b>#{a['id']}</b>\n"
-        text += f"💇 {SERVICES[a['service']]} — {PRICES[a['service']]}₽\n"
-        text += f"👤 {a['master']}\n"
-        text += f"📅 {a['date_display']}\n"
-        text += f"⏰ {a['time']}\n"
-        text += f"🕐 Записано: {a['created_at']}\n\n"
+    for b in bookings:
+        service_name = SERVICES[b[1]]
+        price = PRICES[b[1]]
+        text += f"<b>#{b[0]}</b>\n"
+        text += f"💇 {service_name} — {price}₽\n"
+        text += f"👤 {b[2]}\n"
+        text += f"📅 {b[3]}\n"
+        text += f"⏰ {b[4]}\n"
+        text += f"🕐 {b[5]}\n\n"
     
-    text += "\nЧтобы отменить запись, напишите: /cancel_booking НОМЕР"
+    text += "Чтобы отменить запись, напишите: /cancel_booking НОМЕР"
     await message.answer(text, parse_mode="HTML", reply_markup=get_main_menu_kb())
 
 @dp.message(Command("cancel_booking"))
@@ -495,42 +556,16 @@ async def cancel_booking(message: types.Message):
         await message.answer("❌ Номер должен быть числом")
         return
     
-    booking_to_cancel = None
-    for a in appointments:
-        if a["id"] == booking_id and a["user_id"] == message.from_user.id:
-            booking_to_cancel = a
-            break
-    
-    if not booking_to_cancel:
-        await message.answer("❌ Запись с таким номером не найдена или это не ваша запись")
-        return
-    
-    appointments.remove(booking_to_cancel)
-    reminders_sent.discard(str(booking_id))
-    
-    await message.answer(
-        f"✅ <b>ЗАПИСЬ ОТМЕНЕНА!</b>\n\n"
-        f"💇 {SERVICES[booking_to_cancel['service']]} — {PRICES[booking_to_cancel['service']]}₽\n"
-        f"👤 {booking_to_cancel['master']}\n"
-        f"📅 {booking_to_cancel['date_display']}\n"
-        f"⏰ {booking_to_cancel['time']}",
-        parse_mode="HTML",
-        reply_markup=get_main_menu_kb()
-    )
-    
-    try:
-        await bot.send_message(
-            MASTER_ID,
-            f"⚠️ <b>ЗАПИСЬ ОТМЕНЕНА!</b>\n\n"
-            f"👤 {booking_to_cancel['user_name']}\n"
-            f"💇 {SERVICES[booking_to_cancel['service']]} — {PRICES[booking_to_cancel['service']]}₽\n"
-            f"👤 {booking_to_cancel['master']}\n"
-            f"📅 {booking_to_cancel['date_display']}\n"
-            f"⏰ {booking_to_cancel['time']}",
-            parse_mode="HTML"
-        )
-    except:
-        pass
+    if cancel_booking_db(booking_id, message.from_user.id):
+        reminders_sent.discard(str(booking_id))
+        await message.answer(f"✅ Запись #{booking_id} отменена!", reply_markup=get_main_menu_kb())
+        
+        try:
+            await bot.send_message(MASTER_ID, f"⚠️ <b>ЗАПИСЬ ОТМЕНЕНА!</b>\n\nНомер: #{booking_id}", parse_mode="HTML")
+        except:
+            pass
+    else:
+        await message.answer("❌ Запись не найдена или это не ваша запись")
 
 # ========== КОМАНДЫ ДЛЯ МАСТЕРА ==========
 @dp.message(Command("admin"))
@@ -539,20 +574,23 @@ async def admin_view(message: types.Message):
         await message.answer("⛔ Нет доступа")
         return
     
-    if not appointments:
+    bookings = get_all_bookings()
+    if not bookings:
         await message.answer("📭 Нет записей")
         return
     
-    text = "📊 <b>Все записи</b>\n\n"
-    for a in appointments:
-        source = "🌐 Сайт" if a.get("from_site") else "🤖 Бот"
-        text += f"<b>#{a['id']}</b> {source}\n"
-        text += f"👤 {a['user_name']}\n"
-        text += f"💇 {SERVICES[a['service']]} — {PRICES[a['service']]}₽\n"
-        text += f"👤 {a['master']}\n"
-        text += f"📅 {a['date_display']}\n"
-        text += f"⏰ {a['time']}\n"
-        text += f"🕐 {a['created_at']}\n\n"
+    text = "📊 <b>ВСЕ ЗАПИСИ</b>\n\n"
+    for b in bookings:
+        source = "🌐 Сайт" if b[7] else "🤖 Бот"
+        service_name = SERVICES[b[2]]
+        price = PRICES[b[2]]
+        text += f"<b>#{b[0]}</b> {source}\n"
+        text += f"👤 {b[1]}\n"
+        text += f"💇 {service_name} — {price}₽\n"
+        text += f"👤 {b[3]}\n"
+        text += f"📅 {b[4]}\n"
+        text += f"⏰ {b[5]}\n"
+        text += f"🕐 {b[6]}\n\n"
         
         if len(text) > 3500:
             await message.answer(text, parse_mode="HTML")
@@ -565,10 +603,10 @@ async def cancel_cmd(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer("❌ Действие отменено. /start", reply_markup=get_main_menu_kb())
 
-# ========== ЗАПУСК ==========
 async def main():
     print("✅ БОТ ЗАПУЩЕН!")
-    print("🔒 Проверка занятых слотов включена")
+    print("📦 База данных SQLite подключена")
+    print("🔒 Защита от двойных записей включена")
     print("🔔 Напоминания о записях включены (за час)")
     print("🌐 Поддержка записей с сайта включена")
     
